@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img">
+<title>Ibrahim Mohamed — Software Engineer, Flutter Mobile and Desktop Developer</title>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  <linearGradient id="bgv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+  <radialGradient id="vg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#8b5cf6" stop-opacity="0.45"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></radialGradient>
+  <radialGradient id="cg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#22d3ee" stop-opacity="0.28"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 H 0 V 40" fill="none" stroke="#ffffff" stroke-opacity="0.045"/></pattern>
+  <clipPath id="clip"><rect width="1200" height="340" rx="22"/></clipPath>
+</defs>
+<style>
+  .blob1 { animation: f1 9s ease-in-out infinite alternate; }
+  .blob2 { animation: f2 11s ease-in-out infinite alternate; }
+  @keyframes f1 { from { transform: translate(0,0); } to { transform: translate(-40px,30px); } }
+  @keyframes f2 { from { transform: translate(0,0); } to { transform: translate(50px,-30px); } }
+  .role { opacity: 0; animation: cycle 9s infinite; }
+  .r0 { animation-delay: 0s; } .r1 { animation-delay: 3s; } .r2 { animation-delay: 6s; }
+  @keyframes cycle { 0% { opacity: 0; transform: translateY(8px); } 6% { opacity: 1; transform: translateY(0); } 30% { opacity: 1; } 36% { opacity: 0; transform: translateY(-8px); } 100% { opacity: 0; } }
+  .trace { stroke-dasharray: 6 10; animation: flow 2.4s linear infinite; opacity: .85; }
+  @keyframes flow { to { stroke-dashoffset: -64; } }
+  .pulse { animation: pulse 2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.5); } }
+  .chip { animation: chip 4s ease-in-out infinite alternate; }
+  @keyframes chip { from { opacity: .75; } to { opacity: 1; } }
+</style>
+<g clip-path="url(#clip)">
+  <rect width="1200" height="340" fill="#07060d"/>
+  <rect width="1200" height="340" fill="url(#grid)"/>
+  <circle class="blob1" cx="1010" cy="60" r="260" fill="url(#vg)"/>
+  <circle class="blob2" cx="140" cy="330" r="240" fill="url(#cg)"/>
+  <path d="M 905 170 H 840 V 120 H 780" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/><path d="M 905 190 H 820 V 235 H 760" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/><path d="M 905 150 V 90 H 960 V 50" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/><path d="M 1015 170 H 1075 V 120 H 1140" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/><path d="M 1015 190 H 1090 V 245 H 1150" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/><path d="M 985 105 V 60 H 1040" class="trace" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="780" cy="120" r="4" fill="#22d3ee"/><circle cx="760" cy="235" r="4" fill="#22d3ee"/><circle cx="960" cy="50" r="4" fill="#22d3ee"/><circle cx="1140" cy="120" r="4" fill="#22d3ee"/><circle cx="1150" cy="245" r="4" fill="#22d3ee"/><circle cx="1040" cy="60" r="4" fill="#22d3ee"/>
+  <g class="chip">
+    <rect x="905" y="125" width="110" height="90" rx="16" fill="#0d0b18" stroke="url(#bgv)" stroke-width="2.5"/>
+    <rect x="921" y="141" width="78" height="58" rx="8" fill="none" stroke="#8b5cf6" stroke-opacity="0.5"/>
+    <text x="960" y="180" text-anchor="middle" font-family="SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="30" font-weight="700" fill="url(#bg)">&lt;/&gt;</text>
+  </g>
+  <text x="70" y="92" font-family="SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="14" fill="#22d3ee" letter-spacing="3">// HELLO, WORLD — I'M</text>
+  <text x="68" y="170" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="800" fill="url(#bg)" letter-spacing="1">IBRAHIM MOHAMED</text>
+  <text class="role r0" x="70" y="228" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="27" fill="#d7d3ee">Software Engineer</text><text class="role r1" x="70" y="228" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="27" fill="#d7d3ee">Flutter Mobile &amp; Desktop Developer</text><text class="role r2" x="70" y="228" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif" font-size="27" fill="#d7d3ee">Founder · Archai Solutions</text>
+  <text x="70" y="268" font-family="'Segoe UI', 'Noto Sans Arabic', Tahoma, Arial, sans-serif" font-size="19" fill="#8f8aab">مهندس برمجيات · مطوّر تطبيقات الموبايل والديسكتوب</text>
+  <g>
+    <rect x="70" y="288" width="214" height="32" rx="16" fill="#0f0d1c" stroke="#34d399" stroke-opacity="0.45"/>
+    <circle class="pulse" cx="92" cy="304" r="5" fill="#34d399"/>
+    <text x="106" y="309" font-family="SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="13" fill="#d7d3ee">Open to remote roles</text>
+    <rect x="296" y="288" width="104" height="32" rx="16" fill="#0f0d1c" stroke="#221e3a"/>
+    <text x="348" y="309" text-anchor="middle" font-family="SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace" font-size="13" fill="#d7d3ee">Egypt</text>
+  </g>
+</g>
+<rect x="0.5" y="0.5" width="1199" height="339" rx="22" fill="none" stroke="#221e3a"/>
+</svg>
