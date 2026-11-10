@@ -7,7 +7,7 @@
 [![Portfolio](https://img.shields.io/badge/Portfolio-himego.vercel.app-8B5CF6?style=for-the-badge&logo=vercel&logoColor=white&labelColor=0D0B18)](https://himego.vercel.app/)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Ibrahim%20Mohamed-22D3EE?style=for-the-badge&logo=linkedin&logoColor=white&labelColor=0D0B18)](https://www.linkedin.com/in/ibrahim-mohamedx)
 [![Email](https://img.shields.io/badge/Email-Get%20in%20touch-8B5CF6?style=for-the-badge&logo=gmail&logoColor=white&labelColor=0D0B18)](mailto:ibrahimmohamed09854@gmail.com)
-[![Archai Solutions](https://img.shields.io/badge/Archai%20Solutions-Showcase-22D3EE?style=for-the-badge&labelColor=0D0B18)](https://archai-showcase.web.app/)
+[![Archai Solutions](https://img.shields.io/badge/Archai%20Solutions-Website-22D3EE?style=for-the-badge&labelColor=0D0B18)](https://archaisolutions.vercel.app)
 
 </div>
 
@@ -52,11 +52,11 @@ I care about codebases that stay maintainable. I structure apps with **Clean Arc
 
 ## Experience
 
-| Role | Where | Period |
-| :-- | :-- | :-- |
-| **Mobile & Desktop App Developer** (Flutter) | FutureX | Mar 2026 – Present |
-| **Founder & CEO** | Archai Solutions | Jun 2026 – Present |
-| **Freelance Mobile & Software Developer** | Self-employed | Jan 2024 – Present |
+| Role                                         | Where            | Period             |
+| :------------------------------------------- | :--------------- | :----------------- |
+| **Mobile & Desktop App Developer** (Flutter) | FutureX          | Mar 2026 – Present |
+| **Founder & CEO**                            | Archai Solutions | Jun 2026 – Present |
+| **Freelance Mobile & Software Developer**    | Self-employed    | Jan 2024 – Present |
 
 **Education:** Bachelor's Degree, Higher Technological Institute, Beni Suef (2026)
 
@@ -80,4 +80,4 @@ I'm looking for remote opportunities where I can build Flutter and software prod
 - **Email:** [ibrahimmohamed09854@gmail.com](mailto:ibrahimmohamed09854@gmail.com)
 - **LinkedIn:** [linkedin.com/in/ibrahim-mohamedx](https://www.linkedin.com/in/ibrahim-mohamedx)
 - **Portfolio:** [himego.vercel.app](https://himego.vercel.app/)
-- **Archai Solutions:** [archai-showcase.web.app](https://archai-showcase.web.app/) · [GitHub organization](https://github.com/Archai-Solution)
+- **Archai Solutions:** [archaisolutions.vercel.app](https://archaisolutions.vercel.app) · [GitHub organization](https://github.com/Archai-Solution)
