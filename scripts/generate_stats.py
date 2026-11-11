@@ -107,8 +107,9 @@ def languages_svg(d):
         msg = "Syncing live stats. Updates automatically after the first push." if not d else "No language data yet"
         out.append(text_el(28, 100, msg, dict(T_BODY, fill=MUTED)))
     else:
-        total = sum(d["langs"].values())
-        top = sorted(d["langs"].items(), key=lambda kv: -kv[1])[:6]
+        langs = {k: v for k, v in d["langs"].items() if k.lower() != "html"}
+        total = sum(langs.values())
+        top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
         y = 76
         bar_x, bar_w = 130, W - 130 - 76
         for name, size in top:
