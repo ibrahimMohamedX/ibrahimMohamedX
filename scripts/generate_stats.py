@@ -76,6 +76,7 @@ def fmt(n):
 
 
 def stats_svg(d):
+    uid = "stt"
     rows = [
         ("Public repositories", fmt(d["repos"]) if d else "…"),
         ("Stars earned", fmt(d["stars"]) if d else "…"),
@@ -84,32 +85,27 @@ def stats_svg(d):
         ("On GitHub since", str(d["since"]) if d else "…"),
     ]
     out = [
-        card_open(W, H, "st", "GitHub overview"),
-        f'<text x="28" y="44" font-family="{MONO}" font-size="12" fill="{CYAN}" letter-spacing="1.5">// GITHUB OVERVIEW</text>',
+        card_open(W, H, uid, "GitHub overview"),
+        overline(28, 44, "// GITHUB OVERVIEW"),
     ]
     y = 78
     for label, val in rows:
-        out.append(f'<text x="28" y="{y}" font-family="{SANS}" font-size="14" fill="{MUTED}">{esc(label)}</text>')
-        out.append(
-            f'<text x="{W-28}" y="{y}" text-anchor="end" font-family="{SANS}" font-size="15" '
-            f'font-weight="700" fill="{TEXT}">{esc(val)}</text>'
-        )
-        out.append(f'<line x1="28" y1="{y+10}" x2="{W-28}" y2="{y+10}" stroke="{BORDER}"/>')
+        out.append(text_el(28, y, label, dict(T_BODY, fill=MUTED)))
+        out.append(text_el(W - 28, y, val, T_DATA, anchor="end"))
+        out.append(f'<line x1="28" y1="{y + 10}" x2="{W - 28}" y2="{y + 10}" stroke="{BORDER_SOFT}"/>')
         y += 28
     note = "Public repositories and public activity only" if d else "Syncing live stats. Updates automatically after the first push."
-    out.append(f'<text x="28" y="{H-12}" font-family="{SANS}" font-size="11" fill="{MUTED}" opacity="0.8">{esc(note)}</text>')
+    out.append(text_el(28, H - 14, note, T_CAPTION))
     out.append("</svg>")
     return "".join(out)
 
 
 def languages_svg(d):
-    out = [
-        card_open(W, H, "lg", "Top languages"),
-        f'<text x="28" y="44" font-family="{MONO}" font-size="12" fill="{CYAN}" letter-spacing="1.5">// TOP LANGUAGES</text>',
-    ]
+    uid = "lg"
+    out = [card_open(W, H, uid, "Top languages"), overline(28, 44, "// TOP LANGUAGES")]
     if not d or not d["langs"]:
         msg = "Syncing live stats. Updates automatically after the first push." if not d else "No language data yet"
-        out.append(f'<text x="28" y="100" font-family="{SANS}" font-size="13" fill="{MUTED}">{esc(msg)}</text>')
+        out.append(text_el(28, 100, msg, dict(T_BODY, fill=MUTED)))
     else:
         total = sum(d["langs"].values())
         top = sorted(d["langs"].items(), key=lambda kv: -kv[1])[:6]
@@ -118,15 +114,15 @@ def languages_svg(d):
         for name, size in top:
             pct = size / total * 100
             color = LANG_COLORS.get(name, "#6b7280")
-            out.append(f'<text x="28" y="{y+4}" font-family="{SANS}" font-size="13" fill="{TEXT}">{esc(name)}</text>')
-            out.append(f'<rect x="{bar_x}" y="{y-6}" width="{bar_w}" height="10" rx="5" fill="#15122a"/>')
-            out.append(f'<rect x="{bar_x}" y="{y-6}" width="{max(bar_w*pct/100, 6):.1f}" height="10" rx="5" fill="{color}"/>')
+            out.append(text_el(28, y + 4, name, dict(T_BODY, size=13, fill=TEXT)))
+            out.append(f'<rect x="{bar_x}" y="{y - 6}" width="{bar_w}" height="9" rx="4.5" fill="{N700}"/>')
+            out.append(f'<rect x="{bar_x}" y="{y - 6}" width="{max(bar_w * pct / 100, 6):.1f}" height="9" rx="4.5" fill="{color}"/>')
             out.append(
-                f'<text x="{W-28}" y="{y+4}" text-anchor="end" font-family="{MONO}" font-size="12" fill="{MUTED}">{pct:.1f}%</text>'
+                f'<text x="{W - 28}" y="{y + 4}" text-anchor="end" font-family="{MONO}" font-size="11.5" fill="{MUTED}">{pct:.1f}%</text>'
             )
             y += 26
     out.append(
-        f'<text x="28" y="{H-16}" font-family="{SANS}" font-size="11" fill="{MUTED}" opacity="0.8">'
+        f'<text x="28" y="{H - 16}" font-family="{SANS}" font-size="11" fill="{MUTED}">'
         f"By code size across public, non-fork repositories</text>"
     )
     out.append("</svg>")

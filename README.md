@@ -52,13 +52,9 @@ I care about codebases that stay maintainable. I structure apps with **Clean Arc
 
 ## Experience
 
-| Role                                         | Where            | Period             |
-| :------------------------------------------- | :--------------- | :----------------- |
-| **Mobile & Desktop App Developer** (Flutter) | FutureX          | Mar 2026 – Present |
-| **Founder & CEO**                            | Archai Solutions | Jun 2026 – Present |
-| **Freelance Mobile & Software Developer**    | Self-employed    | Jan 2024 – Present |
-
-**Education:** Bachelor's Degree, Higher Technological Institute, Beni Suef (2026)
+<div align="center">
+  <img src="assets/experience.svg" alt="Experience timeline: Mobile &amp; Desktop App Developer (Flutter) at FutureX — Mar 2026 to Present; Founder &amp; CEO at Archai Solutions — Jun 2026 to Present; Freelance Mobile &amp; Software Developer — Jan 2024 to Present; Bachelor's Degree, Higher Technological Institute, Beni Suef — 2026" width="100%" />
+</div>
 
 <br/>
 

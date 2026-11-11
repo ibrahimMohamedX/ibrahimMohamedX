@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
-"""Build the static SVG assets: banner, tech stack and featured-project cards.
-Run: python scripts/build_static_assets.py
+"""Build the static SVG assets: banner, tech stack, featured-project cards
+and the experience timeline.
+
+The banner uses the original hero design. All other cards use the tokenised
+design system from card_style. Run:
+    python scripts/build_static_assets.py
 """
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from card_style import *  # noqa: E402,F401,F403
+from card_style import (  # noqa: E402
+    BORDER, BORDER_SOFT, BG, CYAN, CYAN_DIM, GREEN, MONO, MUTED, N800, N900,
+    PANEL, PAD_CARD, SANS, STATUS, SUBTLE, T_BODY, T_CHIP, T_ENTRY, T_TITLE,
+    VIOLET, VIOLET_BRIGHT, card_open, chip, defs, esc, overline,
+    pill, text_el, text_w, top_edge,
+)
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 os.makedirs(OUT, exist_ok=True)
@@ -17,7 +26,7 @@ def save(name, text):
         f.write(text)
 
 
-# ------------------------------------------------------------------ banner
+# ------------------------------------------------------------------ banner (original hero design)
 def banner():
     W, H = 1200, 340
     roles = ["Software Engineer", "Flutter Mobile & Desktop Developer", "Founder · Archai Solutions"]
@@ -69,7 +78,7 @@ def banner():
   {trace_svg}
   {dots}
   <g class="chip">
-    <rect x="905" y="125" width="110" height="90" rx="16" fill="#0d0b18" stroke="url(#bgv)" stroke-width="2.5"/>
+    <rect x="905" y="125" width="110" height="90" rx="16" fill="{PANEL}" stroke="url(#bgv)" stroke-width="2.5"/>
     <rect x="921" y="141" width="78" height="58" rx="8" fill="none" stroke="{VIOLET}" stroke-opacity="0.5"/>
     <text x="960" y="180" text-anchor="middle" font-family="{MONO}" font-size="30" font-weight="700" fill="url(#bg)">&lt;/&gt;</text>
   </g>
@@ -89,7 +98,7 @@ def banner():
 </svg>"""
 
 
-# ------------------------------------------------------------------ tech stack
+# ---------------------------------------------------------------- tech stack
 STACK = [
     ("MOBILE & DESKTOP", ["Flutter", "Dart", "Cubit / BLoC", "Clean Architecture", "MVVM", "GoRouter", "Windows Desktop"]),
     ("NETWORKING & DATA", ["REST APIs", "Dio", "Firebase Auth", "Cloud Firestore", "FCM", "Hive", "Freezed", "build_runner"]),
@@ -98,105 +107,154 @@ STACK = [
     ("TOOLS", ["Git", "GitHub", "GitLab", "Figma", "VS Code", "Claude Code"]),
 ]
 
+W_ST = 1012
+
 
 def stack():
-    W = 1000
-    label_w, x0, right = 190, 28, W - 28
-    y = 62
+    uid = "st"
+    pad = 32
+    label_w = 186
+    x0, right = pad, W_ST - pad
+    chip_x0 = pad + label_w
+    n_items = sum(len(items) for _, items in STACK)
+
     parts = []
-    idx = 0
-    for label, items in STACK:
-        parts.append(f'<text x="{x0}" y="{y+20}" font-family="{MONO}" font-size="11.5" fill="{CYAN}" letter-spacing="1.5">{esc(label)}</text>')
-        x = x0 + label_w
-        row_y = y
+    y = 76
+    last = len(STACK) - 1
+    for i, (label, items) in enumerate(STACK):
+        parts.append(overline(x0, y + 17, label))
+        x, row_y = chip_x0, y
         for it in items:
-            w = int(len(it) * 7.9 + 32)
+            s, w = chip(x, row_y, it, h=26, size=12.5, uid=uid)
             if x + w > right:
-                x = x0 + label_w
-                row_y += 40
-            parts.append(
-                f'<g class="c" style="animation-delay:{idx*0.06:.2f}s">'
-                f'<rect x="{x}" y="{row_y}" width="{w}" height="30" rx="15" fill="#120f22" stroke="{BORDER}"/>'
-                f'<circle cx="{x+14}" cy="{row_y+15}" r="3" fill="url(#sg)"/>'
-                f'<text x="{x+24}" y="{row_y+20}" font-family="{SANS}" font-size="13" fill="{TEXT}">{esc(it)}</text></g>'
-            )
-            x += w + 10
-            idx += 1
-        y = row_y + 52
-        parts.append(f'<line x1="{x0}" y1="{y-12}" x2="{right}" y2="{y-12}" stroke="{BORDER}" stroke-opacity="0.6"/>')
-    H = y + 6
+                x, row_y = chip_x0, row_y + 36
+                s, w = chip(x, row_y, it, h=26, size=12.5, uid=uid)
+            parts.append(s)
+            x += w + 8
+        bottom = row_y + 26
+        if i < last:
+            div = bottom + 16
+            parts.append(f'<line x1="{x0}" y1="{div}" x2="{right}" y2="{div}" stroke="{BORDER_SOFT}"/>')
+            y = div + 24
+        else:
+            y = bottom
+    H = y + 24
     head = (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img">'
-        f"<title>Tech stack</title>{defs('s')}"
-        f'<linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{CYAN}"/><stop offset="1" stop-color="{VIOLET}"/></linearGradient>'
-        f"<style>.c{{opacity:0;animation:in .5s ease forwards}}@keyframes in{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:none}}}}</style>"
-        f'<rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="18" fill="{PANEL}" stroke="{BORDER}"/>'
-        f'<rect x="16" y="0.5" width="{W-32}" height="3" rx="1.5" fill="url(#sg)"/>'
-        f'<text x="{x0}" y="40" font-family="{MONO}" font-size="12" fill="{MUTED}" letter-spacing="2">// TECH STACK</text>'
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W_ST}" height="{H}" viewBox="0 0 {W_ST} {H}" role="img">'
+        f"<title>Tech stack</title>{defs(uid)}"
+        f'<rect x="0.5" y="0.5" width="{W_ST - 1}" height="{H - 1}" rx="14" fill="{N800}" stroke="{BORDER}"/>'
+        f"{top_edge(W_ST, uid)}"
+        f"{overline(pad, 40, '// TECH STACK')}"
+        f'<text x="{right}" y="40" text-anchor="end" font-family="{MONO}" font-size="11" fill="{MUTED}">{n_items} tools</text>'
     )
     return head + "".join(parts) + "</svg>"
 
 
-# ------------------------------------------------------------------ project cards
-def wrap(text, n):
+# ------------------------------------------------------------- project cards
+def wrap_px(text, max_w, size, bold=False):
     words, lines, cur = text.split(), [], ""
-    for w in words:
-        if len(cur) + len(w) + 1 > n and cur:
+    for w_ in words:
+        cand = (cur + " " + w_).strip()
+        if text_w(cand, size, bold=bold) > max_w and cur:
             lines.append(cur)
-            cur = w
+            cur = w_
         else:
-            cur = (cur + " " + w).strip()
+            cur = cand
     if cur:
         lines.append(cur)
     return lines
 
 
-def project(uid, title, status, desc, chips, accent=CYAN):
-    W, H = 490, 214
+def project(uid, title, status_label, state, desc, chips_):
+    W, H = 492, 220
+    color, _ = STATUS[state]
     out = [card_open(W, H, uid, title)]
-    sw = int(len(status) * 6.9 + 28)
-    out.append(f'<rect x="28" y="26" width="{sw}" height="24" rx="12" fill="#120f22" stroke="{accent}" stroke-opacity="0.5"/>')
-    out.append(f'<circle cx="42" cy="38" r="3.5" fill="{accent}"/>')
-    out.append(f'<text x="52" y="42.5" font-family="{MONO}" font-size="11.5" fill="#d7d3ee">{esc(status)}</text>')
-    out.append(f'<text x="28" y="86" font-family="{SANS}" font-size="23" font-weight="700" fill="{TEXT}">{esc(title)}</text>')
+    s, _pw = pill(PAD_CARD, 24, status_label, color, h=22)
+    out.append(s)
+    out.append(text_el(PAD_CARD, 88, title, T_TITLE))
     y = 112
-    for ln in wrap(desc, 62)[:3]:
-        out.append(f'<text x="28" y="{y}" font-family="{SANS}" font-size="13" fill="{MUTED}">{esc(ln)}</text>')
-        y += 19
-    x = 28
-    for c in chips:
-        w = int(len(c) * 7 + 22)
-        out.append(f'<rect x="{x}" y="{H-44}" width="{w}" height="24" rx="12" fill="#120f22" stroke="{BORDER}"/>')
-        out.append(f'<text x="{x+w/2}" y="{H-27.5}" text-anchor="middle" font-family="{MONO}" font-size="11.5" fill="#d7d3ee">{esc(c)}</text>')
+    for ln in wrap_px(desc, W - 2 * PAD_CARD, T_BODY["size"])[:3]:
+        out.append(text_el(PAD_CARD, y, ln, T_BODY))
+        y += T_BODY["lh"]
+    x = PAD_CARD
+    for c in chips_:
+        s, w = chip(x, H - 26 - 24, c, h=24, size=11.5, mono=True, dot=False)
+        out.append(s)
         x += w + 8
     out.append("</svg>")
     return "".join(out)
 
 
 PROJECTS = [
-    ("project-hr-erp.svg", "Archai HR ERP", "SaaS · Completed",
+    ("project-hr-erp.svg", "Archai HR ERP", "SaaS · Completed", "shipped",
      "Multi-tenant HR platform: a central platform project plus one Supabase project per company. Employees, attendance, leave and payroll.",
-     ["React", "TypeScript", "Supabase"], CYAN),
-    ("project-futurex-pos.svg", "FutureX POS", "Company project · Completed",
+     ["React", "TypeScript", "Supabase"]),
+    ("project-futurex-pos.svg", "FutureX POS", "Company project · Completed", "shipped",
      "Cashier and kitchen workflows, order and check management, mixed payment methods, role-based access and receipt printing.",
-     ["Flutter", "Cubit", "Dio"], VIOLET),
-    ("project-futurex-erp.svg", "FutureX ERP", "Company project · In development",
+     ["Flutter", "Cubit", "Dio"]),
+    ("project-futurex-erp.svg", "FutureX ERP", "Company project · In development", "building",
      "ShellRoute app shell, attendance-based access and a layered thermal-printing module over USB, Bluetooth and network.",
-     ["Flutter", "GoRouter", "Cubit"], VIOLET),
-    ("project-rasha7ly.svg", "Rasha7ly", "EDPI program project",
+     ["Flutter", "GoRouter", "Cubit"]),
+    ("project-rasha7ly.svg", "Rasha7ly", "EDPI program project", "info",
      "Travel recommendation app with personalized destination suggestions, image browsing and animated UI.",
-     ["Flutter", "MVVM", "Firebase"], CYAN),
-    ("project-stylish.svg", "Stylish", "E-commerce app",
+     ["Flutter", "MVVM", "Firebase"]),
+    ("project-stylish.svg", "Stylish", "E-commerce app", "info",
      "E-commerce app with 20+ screens implemented from Figma designs, structured with Clean Architecture.",
-     ["Flutter", "Cubit", "Clean Arch."], CYAN),
-    ("project-portfolio.svg", "Portfolio", "Live · himego.vercel.app",
+     ["Flutter", "Cubit", "Clean Arch."]),
+    ("project-portfolio.svg", "Portfolio", "Live · himego.vercel.app", "live",
      "Bilingual (Arabic / English) personal portfolio built with React and Vite.",
-     ["React", "Vite"], VIOLET),
+     ["React", "Vite"]),
 ]
+
+
+# ----------------------------------------------------------- experience card
+EXPERIENCE = [
+    ("Mobile & Desktop App Developer (Flutter)", "FutureX", "Mar 2026 – Present"),
+    ("Founder & CEO", "Archai Solutions", "Jun 2026 – Present"),
+    ("Freelance Mobile & Software Developer", "Self-employed", "Jan 2024 – Present"),
+    ("Bachelor's Degree, Higher Technological Institute, Beni Suef", "", "2026"),
+]
+
+W_EX = 1012
+
+
+def experience():
+    uid = "ex"
+    pad = 32
+    y0, pitch = 74, 44
+    H = y0 + (len(EXPERIENCE) - 1) * pitch + 30
+    out = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W_EX}" height="{H}" viewBox="0 0 {W_EX} {H}" role="img">'
+        f"<title>Experience</title>{defs(uid)}"
+        f'<rect x="0.5" y="0.5" width="{W_EX - 1}" height="{H - 1}" rx="14" fill="{N800}" stroke="{BORDER}"/>'
+        f"{top_edge(W_EX, uid)}"
+        f"{overline(pad, 40, '// EXPERIENCE')}",
+    ]
+    line_x = pad + 15
+    last = y0 + (len(EXPERIENCE) - 1) * pitch
+    out.append(f'<line x1="{line_x}" y1="{y0 - 4}" x2="{line_x}" y2="{last + 2}" stroke="{BORDER_SOFT}" stroke-width="2"/>')
+    y = y0
+    for role, org, period in EXPERIENCE:
+        cy = y - 5
+        if org:
+            out.append(f'<circle cx="{line_x}" cy="{cy}" r="4.5" fill="url(#{uid}g)"/>')
+            out.append(f'<circle cx="{line_x}" cy="{cy}" r="8" fill="none" stroke="{VIOLET}" stroke-opacity="0.25"/>')
+        else:
+            out.append(f'<circle cx="{line_x}" cy="{cy}" r="4" fill="{SUBTLE}"/>')
+        out.append(text_el(pad + 34, y, role, T_ENTRY))
+        tx = pad + 34 + text_w(role, T_ENTRY["size"], bold=True) + 18
+        if org:
+            out.append(text_el(tx, y, org, dict(T_CHIP, fill=MUTED)))
+        out.append(text_el(W_EX - pad, y, period, dict(T_CHIP, fill=MUTED), anchor="end"))
+        y += pitch
+    out.append("</svg>")
+    return "".join(out)
+
 
 if __name__ == "__main__":
     save("banner.svg", banner())
     save("stack.svg", stack())
-    for i, (fn, t, s, d, c, a) in enumerate(PROJECTS):
-        save(fn, project(f"p{i}", t, s, d, c, a))
+    for i, (fn, t, s, st, d, c) in enumerate(PROJECTS):
+        save(fn, project(f"p{i}", t, s, st, d, c))
+    save("experience.svg", experience())
     print("static assets written to", OUT)

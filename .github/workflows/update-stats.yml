@@ -28,10 +28,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/generate_stats.py "${{ github.repository_owner }}"
 
+      - name: Build static assets
+        run: python scripts/build_static_assets.py
+
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/stats.svg assets/languages.svg
+          git add assets/
           git diff --staged --quiet || git commit -m "chore: update profile stats"
           git push
