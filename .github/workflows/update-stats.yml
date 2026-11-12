@@ -1,4 +1,4 @@
-name: Update profile stats
+name: Update profile assets
 
 on:
   push:
@@ -13,8 +13,12 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: profile-assets
+  cancel-in-progress: true
+
 jobs:
-  stats:
+  assets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,19 +26,24 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
 
-      - name: Generate stats cards
+      - name: Install build dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Build static assets
+        run: python scripts/build_assets.py
+
+      - name: Refresh GitHub numbers
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/generate_stats.py "${{ github.repository_owner }}"
-
-      - name: Build static assets
-        run: python scripts/build_static_assets.py
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/
-          git diff --staged --quiet || git commit -m "chore: update profile stats"
+          git diff --staged --quiet || git commit -m "chore: update profile assets"
           git push

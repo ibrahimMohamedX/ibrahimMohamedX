@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Generate assets/stats.svg and assets/languages.svg from the GitHub REST API.
+"""Generate assets/github.svg (numbers + language mix) from the GitHub REST API.
 
-Standard library only. Uses GITHUB_TOKEN / GH_TOKEN when present (recommended in Actions).
-Usage: python scripts/generate_stats.py <github-username> [--placeholder]
+Standard library + the local SVG kit only. Uses GITHUB_TOKEN / GH_TOKEN when present.
+
+    python scripts/generate_stats.py <github-username>
+    python scripts/generate_stats.py --snapshot      # offline, uses the last known numbers
 """
 import json
 import os
@@ -11,27 +13,31 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from card_style import *  # noqa: E402,F401,F403
+import tokens as T
+from svgkit import Doc, measure, save
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "assets")
 API = "https://api.github.com"
-W, H = 490, 230
+
+# last numbers published in the previous profile; used for --snapshot / API failures
+SNAPSHOT = {
+    "repos": 31, "stars": 0, "commits": 193, "followers": 1, "since": 2022,
+    "langs": {"TypeScript": 523, "JavaScript": 204, "Dart": 100, "CSS": 74, "C++": 46, "CMake": 37},
+}
 
 LANG_COLORS = {
-    "Dart": "#00B4AB", "TypeScript": "#3178c6", "JavaScript": "#f1e05a", "HTML": "#e34c26",
-    "CSS": "#8b5cf6", "Kotlin": "#A97BFF", "Swift": "#F05138", "Python": "#3572A5",
-    "C++": "#f34b7d", "C": "#8a8a8a", "Java": "#b07219", "Shell": "#89e051", "PHP": "#4F5D95",
-    "C#": "#178600", "Ruby": "#701516", "SCSS": "#c6538c", "Vue": "#41b883",
+    "Dart": "#2dd4bf", "TypeScript": "#60a5fa", "JavaScript": "#fbbf24", "CSS": "#a78bfa",
+    "HTML": "#fb7185", "Kotlin": "#c084fc", "Swift": "#fb923c", "Python": "#38bdf8",
+    "C++": "#f472b6", "C": "#94a3b8", "CMake": "#64748b", "Java": "#f59e0b", "Shell": "#86efac",
+    "PHP": "#818cf8", "C#": "#4ade80",
 }
+EXTRA = ["#22d3ee", "#34d399", "#e879f9", "#facc15"]
 
 
 def get(path, params=None):
     url = API + path + ("?" + urllib.parse.urlencode(params) if params else "")
-    req = urllib.request.Request(
-        url, headers={"Accept": "application/vnd.github+json", "User-Agent": "profile-stats"}
-    )
+    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "profile-stats"})
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:
         req.add_header("Authorization", f"Bearer {token}")
@@ -49,7 +55,6 @@ def collect(user):
             break
         page += 1
     own = [r for r in repos if not r["fork"]]
-    stars = sum(r["stargazers_count"] for r in own)
     langs = {}
     for r in own[:100]:
         try:
@@ -63,83 +68,115 @@ def collect(user):
         commits = None
     return {
         "repos": profile.get("public_repos", len(own)),
-        "stars": stars,
+        "stars": sum(r["stargazers_count"] for r in own),
         "followers": profile.get("followers", 0),
-        "commits": commits,
+        "commits": commits if commits is not None else SNAPSHOT["commits"],
         "since": datetime.strptime(profile["created_at"], "%Y-%m-%dT%H:%M:%SZ").year,
-        "langs": langs,
+        "langs": langs or SNAPSHOT["langs"],
     }
 
 
 def fmt(n):
-    return "—" if n is None else f"{n:,}"
+    return f"{n:,}"
 
 
-def stats_svg(d):
-    uid = "stt"
-    rows = [
-        ("Public repositories", fmt(d["repos"]) if d else "…"),
-        ("Stars earned", fmt(d["stars"]) if d else "…"),
-        ("Public commits", fmt(d["commits"]) if d else "…"),
-        ("Followers", fmt(d["followers"]) if d else "…"),
-        ("On GitHub since", str(d["since"]) if d else "…"),
-    ]
-    out = [
-        card_open(W, H, uid, "GitHub overview"),
-        overline(28, 44, "// GITHUB OVERVIEW"),
-    ]
-    y = 78
-    for label, val in rows:
-        out.append(text_el(28, y, label, dict(T_BODY, fill=MUTED)))
-        out.append(text_el(W - 28, y, val, T_DATA, anchor="end"))
-        out.append(f'<line x1="28" y1="{y + 10}" x2="{W - 28}" y2="{y + 10}" stroke="{BORDER_SOFT}"/>')
-        y += 28
-    note = "Public repositories and public activity only" if d else "Syncing live stats. Updates automatically after the first push."
-    out.append(text_el(28, H - 14, note, T_CAPTION))
-    out.append("</svg>")
-    return "".join(out)
+def github_svg(data, compact=False):
+    if compact:
+        return github_svg_sm(data)
+    W, H = T.W, 330
+    d = Doc("gh", W, H, "GitHub in numbers: public repositories, commits, stars, followers and top languages", bg=T.SURFACE)
+    d.add(f'<circle cx="{W - 80}" cy="0" r="340" fill="{d.glow("gl", T.VIOLET, .16)}"/>')
+
+    cells = [("Public repositories", data["repos"]), ("Public commits", data["commits"]),
+             ("Stars earned", data["stars"]), ("Followers", data["followers"])]
+    colw = (W - 96) / 4
+    for k, (label, val) in enumerate(cells):
+        x = 48 + k * colw
+        d.text(x, 92, fmt(val), "sans700", 64, T.INK, ls=-2)
+        d.text(x + 2, 128, label, "sans500", 18, T.MUTED)
+        if k:
+            d.add(f'<path d="M{x - 20:g} 50V134" stroke="{T.LINE_SOFT}"/>')
+    d.add(f'<path d="M48 168H{W - 48}" stroke="{T.LINE_SOFT}"/>')
+
+    langs = {k: v for k, v in data["langs"].items() if k.lower() != "html"}
+    total = sum(langs.values()) or 1
+    top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
+    shown = sum(v for _, v in top)
+    d.text(48, 208, "Languages by code size", "sans600", 20, T.INK)
+    bx, bw, by = 48, W - 96, 228
+    clip = d.i("barclip")
+    d.add_def(f'<clipPath id="{clip}"><rect x="{bx}" y="{by}" width="{bw}" height="16" rx="8"/></clipPath>')
+    d.add(f'<rect x="{bx}" y="{by}" width="{bw}" height="16" rx="8" fill="{T.RAISED_2}"/>')
+    d.add(f'<g clip-path="url(#{clip})">')
+    x, cols = bx, []
+    for i, (name, v) in enumerate(top):
+        c = LANG_COLORS.get(name, EXTRA[i % len(EXTRA)])
+        cols.append(c)
+        w = bw * v / total
+        d.add(f'<rect x="{x:.1f}" y="{by}" width="{max(w - 3, 2):.1f}" height="16" fill="{c}"/>')
+        x += w
+    d.add("</g>")
+    lx, ly = 48, 284
+    slot = (W - 96) / max(len(top), 1)
+    for i, (name, v) in enumerate(top):
+        px = 48 + i * slot
+        d.add(f'<circle cx="{px + 6:g}" cy="{ly - 6}" r="6" fill="{cols[i]}"/>')
+        d.text(px + 20, ly, name, "sans500", 18, T.INK)
+        d.text(px + 20, ly + 24, f"{v / total * 100:.1f}%", "sans400", 16, T.MUTED)
+    d.text(W - 48, 208, f"On GitHub since {data['since']}", "sans400", 16, T.MUTED, anchor="end")
+    return d.render()
 
 
-def languages_svg(d):
-    uid = "lg"
-    out = [card_open(W, H, uid, "Top languages"), overline(28, 44, "// TOP LANGUAGES")]
-    if not d or not d["langs"]:
-        msg = "Syncing live stats. Updates automatically after the first push." if not d else "No language data yet"
-        out.append(text_el(28, 100, msg, dict(T_BODY, fill=MUTED)))
-    else:
-        langs = {k: v for k, v in d["langs"].items() if k.lower() != "html"}
-        total = sum(langs.values())
-        top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
-        y = 76
-        bar_x, bar_w = 130, W - 130 - 76
-        for name, size in top:
-            pct = size / total * 100
-            color = LANG_COLORS.get(name, "#6b7280")
-            out.append(text_el(28, y + 4, name, dict(T_BODY, size=13, fill=TEXT)))
-            out.append(f'<rect x="{bar_x}" y="{y - 6}" width="{bar_w}" height="9" rx="4.5" fill="{N700}"/>')
-            out.append(f'<rect x="{bar_x}" y="{y - 6}" width="{max(bar_w * pct / 100, 6):.1f}" height="9" rx="4.5" fill="{color}"/>')
-            out.append(
-                f'<text x="{W - 28}" y="{y + 4}" text-anchor="end" font-family="{MONO}" font-size="11.5" fill="{MUTED}">{pct:.1f}%</text>'
-            )
-            y += 26
-    out.append(
-        f'<text x="28" y="{H - 16}" font-family="{SANS}" font-size="11" fill="{MUTED}">'
-        f"By code size across public, non-fork repositories</text>"
-    )
-    out.append("</svg>")
-    return "".join(out)
-
-
-def write(name, content, out_dir=OUT):
-    os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, name), "w", encoding="utf-8") as f:
-        f.write(content)
+def github_svg_sm(data):
+    W, H = T.W_SM, 470
+    d = Doc("ghs", W, H, "GitHub in numbers: public repositories, commits, stars, followers and top languages", bg=T.SURFACE)
+    d.add(f'<circle cx="{W}" cy="0" r="260" fill="{d.glow("gl", T.VIOLET, .16)}"/>')
+    cells = [("Public repositories", data["repos"]), ("Public commits", data["commits"]),
+             ("Stars earned", data["stars"]), ("Followers", data["followers"])]
+    for k, (label, val) in enumerate(cells):
+        x = 32 + (k % 2) * 270
+        y = 76 + (k // 2) * 100
+        d.text(x, y, fmt(val), "sans700", 56, T.INK, ls=-1.5)
+        d.text(x + 2, y + 28, label, "sans500", 17, T.MUTED)
+    d.add(f'<path d="M32 258H{W - 32}" stroke="{T.LINE_SOFT}"/>')
+    langs = {k: v for k, v in data["langs"].items() if k.lower() != "html"}
+    total = sum(langs.values()) or 1
+    top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
+    d.text(32, 296, "Languages by code size", "sans600", 19, T.INK)
+    bx, bw, by = 32, W - 64, 312
+    clip = d.i("barclip")
+    d.add_def(f'<clipPath id="{clip}"><rect x="{bx}" y="{by}" width="{bw}" height="14" rx="7"/></clipPath>')
+    d.add(f'<rect x="{bx}" y="{by}" width="{bw}" height="14" rx="7" fill="{T.RAISED_2}"/>')
+    d.add(f'<g clip-path="url(#{clip})">')
+    x, cols = bx, []
+    for i, (name, v) in enumerate(top):
+        c = LANG_COLORS.get(name, EXTRA[i % len(EXTRA)])
+        cols.append(c)
+        wd = bw * v / total
+        d.add(f'<rect x="{x:.1f}" y="{by}" width="{max(wd - 3, 2):.1f}" height="14" fill="{c}"/>')
+        x += wd
+    d.add("</g>")
+    for i, (name, v) in enumerate(top):
+        px = 32 + (i % 2) * 270
+        py = 372 + (i // 2) * 32
+        d.add(f'<circle cx="{px + 6}" cy="{py - 5}" r="6" fill="{cols[i]}"/>')
+        d.text(px + 20, py, f"{name}", "sans500", 17, T.INK)
+        d.text(px + 20 + measure(name, "sans500", 17) + 8, py, f"{v / total * 100:.1f}%", "sans400", 15, T.MUTED)
+    d.text(W - 32, 296, f"Since {data['since']}", "sans400", 15, T.MUTED, anchor="end")
+    return d.render()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        sys.exit("usage: generate_stats.py <github-username> [--placeholder]")
-    data = None if "--placeholder" in sys.argv else collect(sys.argv[1])
-    write("stats.svg", stats_svg(data))
-    write("languages.svg", languages_svg(data))
-    print("stats written", "(placeholder)" if data is None else data)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--snapshot" in sys.argv or not args:
+        data = SNAPSHOT
+    else:
+        try:
+            data = collect(args[0])
+        except Exception as e:  # keep the previous asset rather than fail the workflow
+            sys.exit(f"stats collection failed, keeping existing asset: {e}")
+    os.makedirs(OUT, exist_ok=True)
+    os.makedirs(os.path.join(OUT, "sm"), exist_ok=True)
+    n = save(os.path.join(OUT, "github.svg"), github_svg(data))
+    n2 = save(os.path.join(OUT, "sm", "github.svg"), github_svg(data, compact=True))
+    print("github.svg", n, "bytes; sm/github.svg", n2, "bytes")
