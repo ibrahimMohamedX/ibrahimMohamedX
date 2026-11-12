@@ -7,6 +7,7 @@ SVGs through <img>, where external fonts/CSS cannot load; data: URIs can.
 import base64
 import io
 import os
+from contextlib import contextmanager
 from collections import defaultdict
 from functools import lru_cache
 
@@ -97,6 +98,8 @@ class Doc:
         self.used = defaultdict(set)
         self.bg, self.radius, self.border = bg, radius, border
         self.pad_l, self.pad_r = pad_l, pad_r
+        self.loop, self.enter, self.exit_ = 12.0, 0.7, 0.6
+        self._kfs = {}
 
     # ids / classes
     def i(self, name):
@@ -146,6 +149,116 @@ class Doc:
         """CSS that applies when the viewer prefers reduced motion."""
         self.css.append(f"@media (prefers-reduced-motion: reduce){{{css}}}")
 
+
+    # ------------------------------------------------------------ motion
+    # Every reveal shares one absolute timeline (self.loop seconds): an element
+    # enters at `delay`, holds, and ALL elements leave together at loop-exit.
+    # Keyframes are generated per (kind, delay, until) with absolute percentages,
+    # so staggering survives every iteration. The un-animated state is "visible".
+    KINDS = {
+        "up":    ("opacity:0;transform:translateY(18px)", "opacity:0;transform:translateY(-8px)", "50% 50%"),
+        "down":  ("opacity:0;transform:translateY(-18px)", "opacity:0;transform:translateY(8px)", "50% 50%"),
+        "left":  ("opacity:0;transform:translateX(-30px)", "opacity:0;transform:translateX(-8px)", "50% 50%"),
+        "right": ("opacity:0;transform:translateX(30px)", "opacity:0;transform:translateX(8px)", "50% 50%"),
+        "pop":   ("opacity:0;transform:scale(.82)", "opacity:0;transform:scale(.94)", "50% 50%"),
+        "fade":  ("opacity:0", "opacity:0", "50% 50%"),
+        "growx": ("opacity:0;transform:scaleX(0)", "opacity:0;transform:scaleX(1)", "0% 50%"),
+        "growy": ("opacity:0;transform:scaleY(0)", "opacity:0;transform:scaleY(1)", "50% 100%"),
+        "draw":  ("opacity:1;stroke-dashoffset:1", "opacity:0;stroke-dashoffset:0", "50% 50%"),
+    }
+
+    def set_loop(self, loop, enter=0.7, exit_=0.6):
+        self.loop, self.enter, self.exit_ = float(loop), enter, exit_
+
+    def _pct(self, t):
+        return max(0.0, min(100.0, t / self.loop * 100))
+
+    def _kf(self, kind, delay, until):
+        key = (kind, round(delay, 3), None if until is None else round(until, 3))
+        if key in self._kfs:
+            return self._kfs[key]
+        name = f"{self.uid}-{kind}-{len(self._kfs)}"
+        a, z, _ = self.KINDS[kind]
+        vis = "opacity:1;stroke-dashoffset:0" if kind == "draw" else "opacity:1;transform:none"
+        L, e = self.loop, self.enter
+        t0 = delay
+        t1 = delay + (e * 2.6 if kind == "draw" else e)
+        t2 = until if until is not None else L - self.exit_
+        t3 = (t2 + self.exit_) if until is not None else L
+        ease = "cubic-bezier(.22,.9,.24,1)"
+        p0, p1, p2, p3 = (self._pct(t) for t in (t0, t1, t2, t3))
+        head = f"0%{{{a};animation-timing-function:{ease}}}" if p0 == 0 else \
+               f"0%,{p0:.3f}%{{{a};animation-timing-function:{ease}}}"
+        body = (f"{p1:.3f}%{{{vis}}}" if p1 >= p2 else
+                f"{p1:.3f}%{{{vis}}}{p2:.3f}%{{{vis};animation-timing-function:ease-in}}")
+        tail = f"{p3:.3f}%,100%{{{z}}}" if p3 < 100 else f"100%{{{z}}}"
+        self.css.append(f"@keyframes {name}{{{head}{body}{tail}}}")
+        self._kfs[key] = name
+        return name
+
+    def rv_attrs(self, kind="up", delay=0.0, until=None):
+        name = self._kf(kind, delay, until)
+        origin = self.KINDS[kind][2]
+        extra = f";stroke-dasharray:1" if kind == "draw" else ""
+        return (f'class="{self.i("rv")}" style="transform-box:fill-box;transform-origin:{origin}'
+                f'{extra};animation:{name} {self.loop:g}s linear infinite"')
+
+    @contextmanager
+    def rv(self, kind="up", delay=0.0, until=None):
+        self.add(f"<g {self.rv_attrs(kind, delay, until)}>")
+        yield
+        self.add("</g>")
+
+    def draw(self, d_attr, stroke, width=2, delay=0.0, extra=""):
+        self.add(f'<path d="{d_attr}" pathLength="1" fill="none" stroke="{stroke}" stroke-width="{width}" '
+                 f'stroke-linecap="round" stroke-linejoin="round" {self.rv_attrs("draw", delay)} {extra}/>')
+
+    def idle(self, name, css_body, dur, delay=0.0, alt=True, ease="ease-in-out", origin=None):
+        """Continuous ambient motion. Returns attrs for the element to animate."""
+        nm = f"{self.uid}-{name}"
+        if not any(c.startswith(f"@keyframes {nm}{{") for c in self.css):
+            self.css.append(f"@keyframes {nm}{{{css_body}}}")
+        o = f";transform-box:fill-box;transform-origin:{origin or '50% 50%'}"
+        return (f'class="{self.i("idle")}" style="animation:{nm} {dur:g}s {ease} {-delay:g}s infinite'
+                f'{" alternate" if alt else ""}{o}"')
+
+    def float_(self, dy=7, dur=5.5, delay=0.0):
+        return self.idle(f"fl{int(dy)}", f"0%{{transform:translateY(0)}}100%{{transform:translateY({-dy}px)}}", dur, delay)
+
+    def drift(self, dx=26, dy=16, dur=14, delay=0.0):
+        return self.idle(f"dr{int(dx)}", f"0%{{transform:translate(0,0)}}100%{{transform:translate({dx}px,{dy}px)}}", dur, delay)
+
+    def shine(self, x, y, w, h, delay=0.0, period=9.0, op=0.075):
+        """Soft diagonal light sweep across a surface (clipped by the doc)."""
+        gid = self.i("shg")
+        if not any(f'id="{gid}"' in x_ for x_ in self.defs):
+            self.add_def(f'<linearGradient id="{gid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+                         f'<stop offset=".5" stop-color="#fff" stop-opacity="{op}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>')
+        nm = self.i("shine")
+        if not any(c.startswith(f"@keyframes {nm}{{") for c in self.css):
+            self.css.append(f"@keyframes {nm}{{0%{{transform:translateX(0)}}36%,100%{{transform:translateX({w + 420:g}px)}}}}")
+        self.add(f'<g transform="skewX(-18)" class="{self.i("idle")}"><rect x="{x - 300:g}" y="{y - 10:g}" width="220" height="{h + 20:g}" '
+                 f'fill="url(#{gid})" style="animation:{nm} {period:g}s ease-in-out {-delay:g}s infinite"/></g>')
+
+    def cover(self, x, y, w, h, fill, start, dur, steps):
+        """Opaque rect that un-covers text left to right in discrete steps (typing)."""
+        name = self.i(f"cv{len(self._kfs)}")
+        self._kfs[("cv", name)] = name
+        p0, p1 = self._pct(start), self._pct(start + dur)
+        self.css.append(f"@keyframes {name}{{0%,{p0:.3f}%{{transform:scaleX(1);animation-timing-function:steps({steps},end)}}"
+                        f"{p1:.3f}%,99.99%{{transform:scaleX(0)}}100%{{transform:scaleX(1)}}}}")
+        self.add(f'<rect x="{x:g}" y="{y:g}" width="{w:g}" height="{h:g}" fill="{fill}" class="{self.i("rv")}" '
+                 f'style="transform-box:fill-box;transform-origin:100% 50%;animation:{name} {self.loop:g}s linear infinite"/>')
+
+    def rich(self, x, y, parts, font="mono400", size=14, extra=""):
+        """Single-line text made of coloured runs [(text, fill), ...]."""
+        name, weight, _ = T.FONTS[font]
+        for t_, _f in parts:
+            self.used[font].update(t_)
+        spans = "".join(f'<tspan fill="{f}">{esc(t_)}</tspan>' for t_, f in parts)
+        self.add(f'<text x="{x:g}" y="{y:g}" font-family="{fam(font)}" font-size="{size:g}" font-weight="{weight}" '
+                 f'xml:space="preserve" style="white-space:pre" {extra}>{spans}</text>')
+
     def render(self):
         faces = []
         for key, chars in self.used.items():
@@ -163,6 +276,7 @@ class Doc:
         if self.border:
             border = (f'<rect x="0.5" y="0.5" width="{self.w - 1}" height="{self.h - 1}" rx="{r}" '
                       f'fill="none" stroke="{T.LINE}"/>')
+        self.css.append(f"@media (prefers-reduced-motion: reduce){{.{self.i('rv')},.{self.i('idle')},.{self.i('idle')} *{{animation:none!important}}}}")
         desc = f"<desc>{esc(self.desc)}</desc>" if self.desc else ""
         return (
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.w + self.pad_l + self.pad_r}" height="{self.h}" '

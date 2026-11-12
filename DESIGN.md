@@ -23,6 +23,13 @@ larger relative type). The README swaps them with `<picture><source media="(max-
 If a viewer strips `<source>`, the desktop asset is shown, which still works, just smaller.
 
 ## Motion
-- Hero: a POS window, the Print button is pressed, a receipt feeds out in 19 discrete steps (like a thermal printer). 18s loop.
-- Hero roles rotate every 4s. Status dots pulse. HR ERP chart re-grows. ERP card prints a slip. Portfolio card flips EN (LTR) / AR (RTL).
-- The un-animated state of every asset is the finished composition. `prefers-reduced-motion` turns every animation off.
+README SVGs are shown through `<img>`, so scroll-triggered animation (IntersectionObserver) is not possible on GitHub.
+Instead every asset runs a shared timeline (12 s; hero 14 s): elements enter one after another, hold, leave together, and replay.
+Ambient motion runs continuously, so something is always alive when a section scrolls into view.
+
+- Hero: Dart code types itself, the phone beside it builds the screen (order lines arrive, Pay is pressed, state flips to Paid), a Windows "Kitchen" app and Flutter/Dart/Cubit chips float.
+- Cards: status, title, copy and tags arrive in order; the illustration slides in and builds itself (bars grow, sparklines draw, rows slide, tiles pop); light sweep; drifting glow.
+- Stack: labels slide in, chips pop in sequence, Flutter and Dart pulse. Experience: line draws, nodes pop, a light travels down the timeline; ongoing roles pulse, the completed degree is a solid green check.
+- GitHub numbers: figures rise in turn, language bar segments grow. Contact: headline rises, email underline draws. Buttons: pop in, icons float, sheen sweep.
+- The un-animated state of every asset is the finished composition. `prefers-reduced-motion` turns all animation off.
+- Motion API lives in `scripts/svgkit.py` (`Doc.rv`, `Doc.draw`, `Doc.idle`, `Doc.shine`, `Doc.cover`).

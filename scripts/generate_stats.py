@@ -80,89 +80,75 @@ def fmt(n):
     return f"{n:,}"
 
 
+def _langs(data):
+    langs = {k: v for k, v in data["langs"].items() if k.lower() != "html"}
+    total = sum(langs.values()) or 1
+    top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
+    return top, total
+
+
 def github_svg(data, compact=False):
-    if compact:
-        return github_svg_sm(data)
-    W, H = T.W, 330
-    d = Doc("gh", W, H, "GitHub in numbers: public repositories, commits, stars, followers and top languages", bg=T.SURFACE)
-    d.add(f'<circle cx="{W - 80}" cy="0" r="340" fill="{d.glow("gl", T.VIOLET, .16)}"/>')
+    W, H = (T.W_SM, 470) if compact else (T.W, 330)
+    m = 32 if compact else 48
+    d = Doc("ghs" if compact else "gh", W, H,
+            "GitHub in numbers: public repositories, commits, stars, followers and top languages", bg=T.SURFACE)
+    d.set_loop(12.0)
+    d.add(f'<g {d.drift(-30, 20, 15)}><circle cx="{W - 80}" cy="0" r="320" fill="{d.glow("gl", T.VIOLET, .16)}"/></g>')
+    d.shine(0, 0, W, H, delay=2, period=10)
 
     cells = [("Public repositories", data["repos"]), ("Public commits", data["commits"]),
              ("Stars earned", data["stars"]), ("Followers", data["followers"])]
     colw = (W - 96) / 4
     for k, (label, val) in enumerate(cells):
-        x = 48 + k * colw
-        d.text(x, 92, fmt(val), "sans700", 64, T.INK, ls=-2)
-        d.text(x + 2, 128, label, "sans500", 18, T.MUTED)
-        if k:
-            d.add(f'<path d="M{x - 20:g} 50V134" stroke="{T.LINE_SOFT}"/>')
-    d.add(f'<path d="M48 168H{W - 48}" stroke="{T.LINE_SOFT}"/>')
+        if compact:
+            x, y = 32 + (k % 2) * 270, 76 + (k // 2) * 100
+            size, ly = 56, y + 28
+        else:
+            x, y = 48 + k * colw, 92
+            size, ly = 64, 128
+        with d.rv("up", 0.2 + k * 0.13):
+            d.text(x, y, fmt(val), "sans700", size, T.INK, ls=-2 if not compact else -1.5)
+            d.text(x + 2, ly, label, "sans500", 17 if compact else 18, T.MUTED)
+        if k and not compact:
+            with d.rv("growy", 0.3 + k * 0.13):
+                d.add(f'<path d="M{x - 20:g} 50V134" stroke="{T.LINE_SOFT}"/>')
+    ry = 258 if compact else 168
+    with d.rv("growx", 0.7):
+        d.add(f'<path d="M{m} {ry}H{W - m}" stroke="{T.LINE_SOFT}"/>')
 
-    langs = {k: v for k, v in data["langs"].items() if k.lower() != "html"}
-    total = sum(langs.values()) or 1
-    top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
-    shown = sum(v for _, v in top)
-    d.text(48, 208, "Languages by code size", "sans600", 20, T.INK)
-    bx, bw, by = 48, W - 96, 228
+    top, total = _langs(data)
+    ty, by, bh = (296, 312, 14) if compact else (208, 228, 16)
+    with d.rv("up", 0.9):
+        d.text(m, ty, "Languages by code size", "sans600", 19 if compact else 20, T.INK)
+        d.text(W - m, ty, f"Since {data['since']}" if compact else f"On GitHub since {data['since']}",
+               "sans400", 15 if compact else 16, T.MUTED, anchor="end")
+    bw = W - 2 * m
+    d.add(f'<rect x="{m}" y="{by}" width="{bw}" height="{bh}" rx="{bh / 2}" fill="{T.RAISED_2}"/>')
     clip = d.i("barclip")
-    d.add_def(f'<clipPath id="{clip}"><rect x="{bx}" y="{by}" width="{bw}" height="16" rx="8"/></clipPath>')
-    d.add(f'<rect x="{bx}" y="{by}" width="{bw}" height="16" rx="8" fill="{T.RAISED_2}"/>')
+    d.add_def(f'<clipPath id="{clip}"><rect x="{m}" y="{by}" width="{bw}" height="{bh}" rx="{bh / 2}"/></clipPath>')
     d.add(f'<g clip-path="url(#{clip})">')
-    x, cols = bx, []
-    for i, (name, v) in enumerate(top):
-        c = LANG_COLORS.get(name, EXTRA[i % len(EXTRA)])
-        cols.append(c)
-        w = bw * v / total
-        d.add(f'<rect x="{x:.1f}" y="{by}" width="{max(w - 3, 2):.1f}" height="16" fill="{c}"/>')
-        x += w
-    d.add("</g>")
-    lx, ly = 48, 284
-    slot = (W - 96) / max(len(top), 1)
-    for i, (name, v) in enumerate(top):
-        px = 48 + i * slot
-        d.add(f'<circle cx="{px + 6:g}" cy="{ly - 6}" r="6" fill="{cols[i]}"/>')
-        d.text(px + 20, ly, name, "sans500", 18, T.INK)
-        d.text(px + 20, ly + 24, f"{v / total * 100:.1f}%", "sans400", 16, T.MUTED)
-    d.text(W - 48, 208, f"On GitHub since {data['since']}", "sans400", 16, T.MUTED, anchor="end")
-    return d.render()
-
-
-def github_svg_sm(data):
-    W, H = T.W_SM, 470
-    d = Doc("ghs", W, H, "GitHub in numbers: public repositories, commits, stars, followers and top languages", bg=T.SURFACE)
-    d.add(f'<circle cx="{W}" cy="0" r="260" fill="{d.glow("gl", T.VIOLET, .16)}"/>')
-    cells = [("Public repositories", data["repos"]), ("Public commits", data["commits"]),
-             ("Stars earned", data["stars"]), ("Followers", data["followers"])]
-    for k, (label, val) in enumerate(cells):
-        x = 32 + (k % 2) * 270
-        y = 76 + (k // 2) * 100
-        d.text(x, y, fmt(val), "sans700", 56, T.INK, ls=-1.5)
-        d.text(x + 2, y + 28, label, "sans500", 17, T.MUTED)
-    d.add(f'<path d="M32 258H{W - 32}" stroke="{T.LINE_SOFT}"/>')
-    langs = {k: v for k, v in data["langs"].items() if k.lower() != "html"}
-    total = sum(langs.values()) or 1
-    top = sorted(langs.items(), key=lambda kv: -kv[1])[:6]
-    d.text(32, 296, "Languages by code size", "sans600", 19, T.INK)
-    bx, bw, by = 32, W - 64, 312
-    clip = d.i("barclip")
-    d.add_def(f'<clipPath id="{clip}"><rect x="{bx}" y="{by}" width="{bw}" height="14" rx="7"/></clipPath>')
-    d.add(f'<rect x="{bx}" y="{by}" width="{bw}" height="14" rx="7" fill="{T.RAISED_2}"/>')
-    d.add(f'<g clip-path="url(#{clip})">')
-    x, cols = bx, []
+    x, cols = m, []
     for i, (name, v) in enumerate(top):
         c = LANG_COLORS.get(name, EXTRA[i % len(EXTRA)])
         cols.append(c)
         wd = bw * v / total
-        d.add(f'<rect x="{x:.1f}" y="{by}" width="{max(wd - 3, 2):.1f}" height="14" fill="{c}"/>')
+        with d.rv("growx", 1.0 + i * 0.12):
+            d.add(f'<rect x="{x:.1f}" y="{by}" width="{max(wd - 3, 2):.1f}" height="{bh}" fill="{c}"/>')
         x += wd
     d.add("</g>")
     for i, (name, v) in enumerate(top):
-        px = 32 + (i % 2) * 270
-        py = 372 + (i // 2) * 32
-        d.add(f'<circle cx="{px + 6}" cy="{py - 5}" r="6" fill="{cols[i]}"/>')
-        d.text(px + 20, py, f"{name}", "sans500", 17, T.INK)
-        d.text(px + 20 + measure(name, "sans500", 17) + 8, py, f"{v / total * 100:.1f}%", "sans400", 15, T.MUTED)
-    d.text(W - 32, 296, f"Since {data['since']}", "sans400", 15, T.MUTED, anchor="end")
+        if compact:
+            px, py = 32 + (i % 2) * 270, 372 + (i // 2) * 32
+        else:
+            px, py = 48 + i * (W - 96) / max(len(top), 1), 284
+        with d.rv("pop", 1.3 + i * 0.1):
+            d.add(f'<circle cx="{px + 6:g}" cy="{py - 5 if compact else py - 6}" r="6" fill="{cols[i]}"/>')
+            d.text(px + 20, py, name, "sans500", 17 if compact else 18, T.INK)
+            pct = f"{v / total * 100:.1f}%"
+            if compact:
+                d.text(px + 20 + measure(name, "sans500", 17) + 8, py, pct, "sans400", 15, T.MUTED)
+            else:
+                d.text(px + 20, py + 24, pct, "sans400", 16, T.MUTED)
     return d.render()
 
 
